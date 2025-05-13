@@ -1,0 +1,27 @@
+# .gitignore for MyPackage
+
+# Python specific
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.so
+
+# Package build
+build/
+dist/
+*.egg-info/
+*.egg
+
+# Jupyter Notebooks
+.ipynb_checkpoints/
+
+# VS Code settings
+.vscode/
+
+# PyCharm settings
+.idea/
+
+# OS Specific
+.DS_Store
+Thumbs.db
