@@ -2,7 +2,7 @@
 from setuptools import setup, find_packages
 
 setup(
-    name="lightning-trainer-utils",
+    name="lightning_trainer_utils",
     version="0.1.0",
     author="Manav Mahan Singh",
     author_email="manav@genaec.ai",
