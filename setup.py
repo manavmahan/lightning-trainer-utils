@@ -1,10 +1,9 @@
 # setup.py
 from setuptools import setup, find_packages
-from . import __version__ as version
 
 setup(
     name="lightning_trainer_utils",
-    version=version,
+    version="2025.05.13.11.50",
     author="Manav Mahan Singh",
     author_email="manav@genaec.ai",
     description="A Python package for using PyTorch Lightning with custom callbacks and model wrappers.",
