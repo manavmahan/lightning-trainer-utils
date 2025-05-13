@@ -1,2 +1,2 @@
 # mypackage/__init__.py
-__version__ = "0.1.0"
+__version__ = "2025.05.13.11.50"
