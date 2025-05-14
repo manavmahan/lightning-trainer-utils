@@ -1,3 +1,4 @@
+[![PyPI version](https://badge.fury.io/py/lightning-trainer-utils.svg)](https://pypi.org/project/lightning-trainer-utils/)
 # PyTorch Lightning Trainer Utilities
 
 ## ML Model Assumptions
