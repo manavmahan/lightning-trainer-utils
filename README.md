@@ -4,14 +4,15 @@
 ## ML Model Assumptions
 
 ### forward
-
-- The batch will be passed as `kwargs` to `forward` function of the ML model.
+- The model wrapper uses the forward function as follows:
 ```python
-self.model(**batch)
+    output = self.model(**x, **self.forward_kwargs)
+    return ModelOuput(**output)
 ```
+It expects `batch` as `dict` and returns a `dict` with keys `[loss, report, output]`.
 
 ### return
 - ML model should return a dict with the following keys:
     - `loss`
-    - `loss-dict`
+    - `report`
     - `output` [optional]

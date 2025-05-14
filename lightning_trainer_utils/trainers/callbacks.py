@@ -3,6 +3,40 @@ import torch
 import pytorch_lightning as pl
 
 
+class SaveCheckpoint(pl.callbacks.ModelCheckpoint):
+    def __init__(self, cfg):
+        """
+        Initializes the callback with the given configuration.
+        Args:
+            cfg (dict): A configuration dictionary containing the following keys:
+                - dirpath (str, optional): Directory path where checkpoints will be saved.
+                  Defaults to "checkpoints/".
+                - filename (str, optional): Filename format for the checkpoints.
+                  Defaults to "step-{step}".
+                - save_top_k (int, optional): Number of best models to save.
+                  Defaults to -1 (save all checkpoints).
+                - every_n_train_steps (int, optional): Frequency (in training steps)
+                  at which checkpoints are saved. Defaults to 500.
+                - save_weights_only (bool, optional): Whether to save only model weights
+                  instead of the full model. Defaults to True.
+                - **cfg: Additional keyword arguments passed to the parent class initializer.
+        """
+
+        dirpath = cfg.get("dirpath", "checkpoints/")
+        filename = cfg.get("filename", "step-{step}")
+        save_top_k = cfg.get("save_top_k", -1)
+        every_n_train_steps = cfg.get("every_n_train_steps", 500)
+        save_weights_only = cfg.get("save_weights_only", True)
+        super().__init__(
+            dirpath=dirpath,
+            filename=filename,
+            save_top_k=save_top_k,
+            every_n_train_steps=every_n_train_steps,
+            save_weights_only=save_weights_only,
+            **cfg,
+        )
+
+
 class LogLearningRate(pl.Callback):
     def on_train_epoch_end(self, trainer, pl_module):
         # Get the learning rate from the optimizer
