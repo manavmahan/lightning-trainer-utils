@@ -33,12 +33,13 @@ class ModelWrapper(pl.LightningModule):
         self.model = model
         self.forward_kwargs = forward_kwargs
 
+        self.optimizer = optimizer_kwargs.pop("optimizer", None)
+        self.schedueler = scheduler_kwargs.pop("scheduler", None)
+
         self.optimizer_kwargs = optimizer_kwargs
         self.max_norm = optimizer_kwargs.get("max_norm", 1.0)
         self.scheduler_kwargs = scheduler_kwargs
 
-        self.curr_total_norm = 0.0
-        self.start_time = None
         self.wandb_id = None
         self.start_epoch = 0
 
@@ -47,15 +48,21 @@ class ModelWrapper(pl.LightningModule):
             self.ema_model = EMA(self.model)
 
     def configure_optimizers(self):
-        optimizer = get_adam_optimizer(self.model.parameters(), **self.optimizer_kwargs)
-        scheduler = get_cosine_schedule_with_warmup(optimizer, **self.scheduler_kwargs)
+        optimizer = (
+            self.optimizer
+            if self.optimizer is not None
+            else get_adam_optimizer(self.model.parameters(), **self.optimizer_kwargs)
+        )
+        scheduler = (
+            self.schedueler
+            if self.schedueler is not None
+            else get_cosine_schedule_with_warmup(optimizer, **self.scheduler_kwargs)
+        )
         return [optimizer], [scheduler]
 
     def optimizer_step(self, *args, **kwargs):
         if self.max_norm is not None:
-            self.curr_total_norm = utils.clip_grad_norm_(
-                self.parameters(), self.max_norm
-            )
+            utils.clip_grad_norm_(self.parameters(), self.max_norm)
         super().optimizer_step(*args, **kwargs)
 
     def forward(self, x):
@@ -68,7 +75,7 @@ class ModelWrapper(pl.LightningModule):
         report = fwd_out.report
 
         for k, v in report.items():
-            self.log("train/" + k, v, on_step=True, logger=True, sync_dist=True)
+            self.log("training/" + k, v, on_step=True, logger=True, sync_dist=True)
 
         if self.use_ema and self.global_rank == 0:
             self.ema_model.step(self.model)
@@ -84,18 +91,18 @@ class ModelWrapper(pl.LightningModule):
 
     def on_save_checkpoint(self, checkpoint):
         """Manually save additional metrics."""
-        for k, v in self.trainer.callback_metrics.items():
-            if k.startswith("train/") or k.startswith("validation/"):
-                checkpoint[k] = v
-        if self.ema_model is not None:
+        checkpoint["metrics"] = self.trainer.callback_metrics
+        if self.use_ema:
             checkpoint["ema_state_dict"] = self.ema_model.state_dict()
         checkpoint["wandb_id"] = self.trainer.logger.experiment.id
 
     def on_load_checkpoint(self, checkpoint):
         super().on_load_checkpoint(checkpoint)
+        self.trainer.callback_metrics = checkpoint.get("metrics", {})
+
         self.wandb_id = checkpoint.get("wandb_id", None)
         self.start_epoch = checkpoint.get("epoch", 0)
-        if self.ema_model is not None:
+        if self.use_ema:
             if "ema_state_dict" in checkpoint:
                 self.ema_model.load_state_dict(checkpoint["ema_state_dict"])
                 print("EMA state dict found in checkpoint.")
