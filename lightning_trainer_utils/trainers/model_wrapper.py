@@ -12,17 +12,27 @@ from .optimizer_scheduler import (
     get_cosine_schedule_with_warmup,
 )
 
+from collections import namedtuple
+
+ModelOuput = namedtuple(
+    "ModelOuput", ["loss", "report", "output"], defaults=[None, None, None]
+)
+
 
 class ModelWrapper(pl.LightningModule):
     @beartype
     def __init__(
         self,
-        model: SegmentVQVAE | Transformer,
+        model: torch.nn.Module,
+        use_ema: bool = False,
         scheduler_kwargs: dict = dict(),
         optimizer_kwargs: dict = dict(),
+        forward_kwargs: dict = dict(),
     ):
         super().__init__()
         self.model = model
+        self.forward_kwargs = forward_kwargs
+
         self.optimizer_kwargs = optimizer_kwargs
         self.max_norm = optimizer_kwargs.get("max_norm", 1.0)
         self.scheduler_kwargs = scheduler_kwargs
@@ -32,23 +42,9 @@ class ModelWrapper(pl.LightningModule):
         self.wandb_id = None
         self.start_epoch = 0
 
-        if isinstance(model, SegmentVQVAE):
+        self.use_ema = use_ema
+        if self.use_ema:
             self.ema_model = EMA(self.model)
-        else:
-            self.ema_model = None
-
-    def on_train_epoch_start(self):
-        if self.start_time is None:
-            self.start_time = time.time()
-
-    def on_train_epoch_end(self):
-        if self.start_epoch > self.current_epoch:
-            self.start_epoch = self.current_epoch
-        elapsed_time = time.time() - self.start_time
-        avg_epoch_time = elapsed_time / (self.current_epoch - self.start_epoch + 1)
-        remaining_epochs = self.trainer.max_epochs - self.current_epoch - 1
-        remaining_time = avg_epoch_time * remaining_epochs
-        # self.log("ETA (min)", remaining_time / 60, sync_dist=True)  # Log ETA in minutes
 
     def configure_optimizers(self):
         optimizer = get_adam_optimizer(self.model.parameters(), **self.optimizer_kwargs)
@@ -56,62 +52,34 @@ class ModelWrapper(pl.LightningModule):
         return [optimizer], [scheduler]
 
     def optimizer_step(self, *args, **kwargs):
-        self.curr_total_norm = utils.clip_grad_norm_(self.parameters(), self.max_norm)
+        if self.max_norm is not None:
+            self.curr_total_norm = utils.clip_grad_norm_(
+                self.parameters(), self.max_norm
+            )
         super().optimizer_step(*args, **kwargs)
 
     def forward(self, x):
-        if isinstance(self.model, Transformer):
-            return self.model(**x)
-        loss, report = self.model(**x, return_loss_breakdown=True)
-        return loss, report
+        output = self.model(**x, **self.forward_kwargs)
+        return ModelOuput(**output)
 
     def training_step(self, batch, batch_idx):
         fwd_out = self(batch)
-        loss, loss_dict = fwd_out
-        cur_lr = get_lr(self.optimizers())
+        loss = fwd_out.loss
+        report = fwd_out.report
 
-        self.log(
-            "train/lr",
-            cur_lr,
-            on_step=False,
-            on_epoch=True,
-            logger=True,
-            sync_dist=True,
-        )
-        self.log(
-            "train/total_norm",
-            self.curr_total_norm,
-            on_step=False,
-            on_epoch=True,
-            logger=True,
-            sync_dist=True,
-        )
-        for k, v in loss_dict.items():
-            self.log(
-                "train/" + k,
-                v,
-                on_step=False,
-                on_epoch=True,
-                logger=True,
-                sync_dist=True,
-            )
-        if self.ema_model is not None and self.global_rank == 0:
+        for k, v in report.items():
+            self.log("train/" + k, v, on_step=True, logger=True, sync_dist=True)
+
+        if self.use_ema and self.global_rank == 0:
             self.ema_model.step(self.model)
         return loss
 
     def validation_step(self, batch, batch_idx):
-        loss, loss_dict = self(batch)
-        if "commit_loss" in loss_dict:
-            del loss_dict["commit_loss"]
-        for k, v in loss_dict.items():
-            self.log(
-                "validation/" + k,
-                v,
-                on_step=False,
-                on_epoch=True,
-                logger=True,
-                sync_dist=True,
-            )
+        fwd_out = self(batch)
+        loss = fwd_out.loss
+        report = fwd_out.report
+        for k, v in report.items():
+            self.log("validation/" + k, v, on_step=True, logger=True, sync_dist=True)
         return loss
 
     def on_save_checkpoint(self, checkpoint):
