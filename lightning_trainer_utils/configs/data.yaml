@@ -5,7 +5,7 @@ data:
     name: validation
 
 dataloader:
-  num_workers: 4
+  num_workers: 7
   batch_size: 32
   drop_last: false
   pin_memory: true

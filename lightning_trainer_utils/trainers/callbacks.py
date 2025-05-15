@@ -26,7 +26,7 @@ class SaveCheckpoint(pl.callbacks.ModelCheckpoint):
         filename = cfg.get("filename", "step-{step}")
         save_top_k = cfg.get("save_top_k", -1)
         every_n_train_steps = cfg.get("every_n_train_steps", 500)
-        save_weights_only = cfg.get("save_weights_only", True)
+        save_weights_only = cfg.get("save_weights_only", False)
         super().__init__(
             dirpath=dirpath,
             filename=filename,
