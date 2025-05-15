@@ -9,8 +9,8 @@ from pytorch_lightning.loggers import WandbLogger
 from pytorch_lightning.callbacks import EarlyStopping
 
 from data_utils.data_module import SharedDataModule
-from trainers.model_wrapper import ModelWrapper
-from trainers.callbacks import (
+from trainer_utils.model_wrapper import ModelWrapper
+from trainer_utils.callbacks import (
     SaveCheckpoint,
     LogLearningRate,
     LogGradient,
