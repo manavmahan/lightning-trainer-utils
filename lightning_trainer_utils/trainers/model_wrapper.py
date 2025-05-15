@@ -80,7 +80,7 @@ class ModelWrapper(pl.LightningModule):
         report = fwd_out.report
 
         for k, v in report.items():
-            self.log("training/" + k, v, on_step=True, logger=True, sync_dist=True)
+            self.log("training/" + k, v, logger=True, sync_dist=True)
 
         if self.use_ema and self.global_rank == 0:
             self.ema_model.step(self.model)
@@ -91,7 +91,7 @@ class ModelWrapper(pl.LightningModule):
         loss = fwd_out.loss
         report = fwd_out.report
         for k, v in report.items():
-            self.log("validation/" + k, v, on_step=True, logger=True, sync_dist=True)
+            self.log("validation/" + k, v, logger=True, sync_dist=True)
         return loss
 
     def on_save_checkpoint(self, checkpoint):
