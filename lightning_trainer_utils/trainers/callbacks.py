@@ -4,7 +4,7 @@ import pytorch_lightning as pl
 
 
 class SaveCheckpoint(pl.callbacks.ModelCheckpoint):
-    def __init__(self, cfg=dict()):
+    def __init__(self, **kwargs):
         """
         Initializes the callback with the given configuration.
         Args:
@@ -22,18 +22,18 @@ class SaveCheckpoint(pl.callbacks.ModelCheckpoint):
                 - **cfg: Additional keyword arguments passed to the parent class initializer.
         """
 
-        dirpath = cfg.get("dirpath", "checkpoints/")
-        filename = cfg.get("filename", "step-{step}")
-        save_top_k = cfg.get("save_top_k", -1)
-        every_n_train_steps = cfg.get("every_n_train_steps", 500)
-        save_weights_only = cfg.get("save_weights_only", False)
+        dirpath = kwargs.pop("dirpath", "checkpoints/")
+        filename = kwargs.pop("filename", "{step}")
+        save_top_k = kwargs.pop("save_top_k", -1)
+        every_n_train_steps = kwargs.pop("every_n_train_steps", 500)
+        save_weights_only = kwargs.pop("save_weights_only", False)
         super().__init__(
             dirpath=dirpath,
             filename=filename,
             save_top_k=save_top_k,
             every_n_train_steps=every_n_train_steps,
             save_weights_only=save_weights_only,
-            **cfg,
+            **kwargs,
         )
         print(
             "Save checkpoint strategy initialized with the following parameters:"
