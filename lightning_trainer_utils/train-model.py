@@ -5,7 +5,6 @@ import torch
 
 torch.backends.cudnn.benchmark = True
 from pytorch_lightning.loggers import WandbLogger
-from pytorch_lightning.callbacks import EarlyStopping
 
 from data_utils.data_module import SharedDataModule
 from trainers.model_wrapper import ModelWrapper
@@ -14,7 +13,6 @@ from trainers.callbacks import (
     LogLearningRate,
     LogGradient,
     LogETL,
-    StepProgressBar,
 )
 
 
@@ -84,7 +82,6 @@ if __name__ == "__main__":
     )
     callbacks = [SaveCheckpoint(), LogETL(), LogGradient(), LogLearningRate()]
 
-    print(trainer_kwargs.get("trainer", dict()))
     trainer = pl.Trainer(
         **trainer_kwargs.get("trainer", dict()),
         logger=wandb_logger,
