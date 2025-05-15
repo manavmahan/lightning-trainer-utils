@@ -18,8 +18,8 @@ class SaveCheckpoint(pl.callbacks.ModelCheckpoint):
                 - every_n_train_steps (int, optional): Frequency (in training steps)
                   at which checkpoints are saved. Defaults to 500.
                 - save_weights_only (bool, optional): Whether to save only model weights
-                  instead of the full model. Defaults to True.
-                - **cfg: Additional keyword arguments passed to the parent class initializer.
+                  instead of the full model. Defaults to False.
+                - **kwargs: Additional keyword arguments passed to the parent class initializer.
         """
 
         dirpath = kwargs.pop("dirpath", "checkpoints/")

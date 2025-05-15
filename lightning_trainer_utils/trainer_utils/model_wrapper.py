@@ -105,7 +105,6 @@ class ModelWrapper(pl.LightningModule):
         super().on_load_checkpoint(checkpoint)
         self.trainer.callback_metrics = checkpoint.get("metrics", {})
 
-        self.wandb_id = checkpoint.get("wandb_id", None)
         self.start_epoch = checkpoint.get("epoch", 0)
         if self.use_ema:
             if "ema_state_dict" in checkpoint:
