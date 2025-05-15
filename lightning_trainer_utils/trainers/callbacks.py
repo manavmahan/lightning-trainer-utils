@@ -4,7 +4,7 @@ import pytorch_lightning as pl
 
 
 class SaveCheckpoint(pl.callbacks.ModelCheckpoint):
-    def __init__(self, cfg):
+    def __init__(self, cfg=dict()):
         """
         Initializes the callback with the given configuration.
         Args:
@@ -35,10 +35,18 @@ class SaveCheckpoint(pl.callbacks.ModelCheckpoint):
             save_weights_only=save_weights_only,
             **cfg,
         )
+        print(
+            "Save checkpoint strategy initialized with the following parameters:"
+            f"\n- dirpath: {dirpath}"
+            f"\n- filename: {filename}"
+            f"\n- save_top_k: {save_top_k}"
+            f"\n- every_n_train_steps: {every_n_train_steps}"
+            f"\n- save_weights_only: {save_weights_only}"
+        )
 
 
 class LogLearningRate(pl.Callback):
-    def on_train_epoch_end(self, trainer, pl_module):
+    def on_train_step_end(self, trainer, pl_module):
         # Get the learning rate from the optimizer
         for param_group in trainer.optimizers[0].param_groups:
             lr = param_group["lr"]
@@ -64,7 +72,7 @@ class LogGradient(pl.Callback):
         # Convert total_norm to a tensor and check for NaN or Inf
         total_norm_tensor = torch.tensor(total_norm)
 
-        self.log("train/norm", total_norm, on_step=True, logger=True, sync_dist=True)
+        pl_module.log("train/norm", total_norm, logger=True, sync_dist=True)
         if torch.isinf(total_norm_tensor) or torch.isnan(total_norm_tensor):
             print(f"Infinite/NaN gradient norm @ {trainer.current_epoch} epoch.")
             trainer.save_checkpoint(
@@ -87,6 +95,4 @@ class LogETL(pl.Callback):
         remaining_time = (
             elapsed_time * (trainer.max_epochs - trainer.current_epoch) / elapsed_epoch
         )
-        pl_module.log(
-            "ETL (min)", remaining_time / 60, sync_dist=True
-        )  # Log ETA in minutes
+        pl_module.log("ETL (min)", remaining_time / 60, sync_dist=True)

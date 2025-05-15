@@ -1,0 +1,12 @@
+data:
+  training:
+    name: training
+  validation:
+    name: validation
+
+dataloader:
+  num_workers: 4
+  batch_size: 32
+  drop_last: false
+  pin_memory: true
+  persistent_workers: true

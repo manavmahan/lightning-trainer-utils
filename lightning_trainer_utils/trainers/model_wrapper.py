@@ -23,11 +23,13 @@ class ModelWrapper(pl.LightningModule):
     @beartype
     def __init__(
         self,
+        *,
         model: torch.nn.Module,
         use_ema: bool = False,
         scheduler_kwargs: dict = dict(),
         optimizer_kwargs: dict = dict(),
         forward_kwargs: dict = dict(),
+        **kwargs,
     ):
         super().__init__()
         self.model = model
@@ -37,8 +39,9 @@ class ModelWrapper(pl.LightningModule):
         self.schedueler = scheduler_kwargs.pop("scheduler", None)
 
         self.optimizer_kwargs = optimizer_kwargs
-        self.max_norm = optimizer_kwargs.get("max_norm", 1.0)
         self.scheduler_kwargs = scheduler_kwargs
+
+        self.max_norm = optimizer_kwargs.get("max_norm", 1.0)
 
         self.wandb_id = None
         self.start_epoch = 0
@@ -46,6 +49,8 @@ class ModelWrapper(pl.LightningModule):
         self.use_ema = use_ema
         if self.use_ema:
             self.ema_model = EMA(self.model)
+
+        print("Unuserd kwargs:", kwargs)
 
     def configure_optimizers(self):
         optimizer = (

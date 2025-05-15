@@ -1,0 +1,26 @@
+wrapper:
+  # The wrapper to use for the trainer
+  # Options: [None, 'ddp', 'dp', 'ddp_spawn', 'horovod', 'tpu_spawn']
+  type: None
+
+  # The number of GPUs to use
+  gpus: 1
+
+  # The number of nodes to use
+  num_nodes: 1
+
+  # The number of processes per node
+  num_processes_per_node: 1
+
+  # The number of GPUs per process
+  gpus_per_process: 1
+
+  scheduler_kwargs:
+    decay_steps: 10
+
+trainer:
+  # The number of epochs to train for
+  max_steps: 32
+
+  # The number of batches to validate for
+  val_check_interval: 1.0
