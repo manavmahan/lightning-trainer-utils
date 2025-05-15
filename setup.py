@@ -14,5 +14,5 @@ setup(
     long_description_content_type="text/markdown",
     url="https://github.com/manavmahan/lightning-trainer-utils",
     packages=find_packages(),
-    python_requires=">=3.12",
+    python_requires=">=3.11",
 )
