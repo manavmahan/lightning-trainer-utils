@@ -35,6 +35,7 @@ class SaveCheckpoint(pl.callbacks.ModelCheckpoint):
             save_weights_only=save_weights_only,
             save_last=True,
             monitor="step",
+            mode="max",
             **kwargs,
         )
         print(
