@@ -7,14 +7,15 @@ wrapper:
   num_nodes: 1
 
   scheduler_kwargs:
-    decay_steps: 10
+    decay_steps: 128
+    warmup_steps: 13
 
   optimizer_kwargs:
     lr: 0.001
     weight_decay: 0.0001
 
 trainer:
-  max_steps: 32
+  max_epochs: 128
   check_val_every_n_epoch: 2
 
-ckpt_path: checkpoints/last.ckpt
+ckpt_path: checkpoints/epoch=00062.ckpt

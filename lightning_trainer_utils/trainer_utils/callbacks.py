@@ -23,18 +23,19 @@ class SaveCheckpoint(pl.callbacks.ModelCheckpoint):
         """
 
         dirpath = kwargs.pop("dirpath", "checkpoints/")
-        filename = kwargs.pop("filename", "{step}")
+        filename = kwargs.pop("filename", "{epoch:05d}")
         save_top_k = kwargs.pop("save_top_k", -1)
-        every_n_train_steps = kwargs.pop("every_n_train_steps", 500)
+        every_n_epochs = kwargs.pop("every_n_train_steps", 1)
         save_weights_only = kwargs.pop("save_weights_only", False)
         super().__init__(
             dirpath=dirpath,
             filename=filename,
             save_top_k=save_top_k,
-            every_n_train_steps=every_n_train_steps,
+            save_on_train_epoch_end=True,
+            every_n_epochs=every_n_epochs,
             save_weights_only=save_weights_only,
             save_last=True,
-            monitor="step",
+            monitor="epoch",
             mode="max",
             **kwargs,
         )
@@ -43,7 +44,7 @@ class SaveCheckpoint(pl.callbacks.ModelCheckpoint):
             f"\n- dirpath: {dirpath}"
             f"\n- filename: {filename}"
             f"\n- save_top_k: {save_top_k}"
-            f"\n- every_n_train_steps: {every_n_train_steps}"
+            f"\n- every_n_epochs: {every_n_epochs}"
             f"\n- save_weights_only: {save_weights_only}"
         )
 
@@ -52,12 +53,12 @@ class LogLearningRate(pl.Callback):
     def __init__(self):
         super().__init__()
 
-    def on_train_batch_end(self, trainer, pl_module, outputs, batch, batch_idx):
+    def on_train_epoch_end(self, trainer, pl_module):
         # Get the learning rate from the optimizer
         for param_group in trainer.optimizers[0].param_groups:
             lr = param_group["lr"]
             break
-        self.log("training/lr", lr, on_step=True, logger=True, sync_dist=True)
+        self.log("training/lr", lr, on_epoch=True, logger=True, sync_dist=True)
 
 
 class LogGradient(pl.Callback):
@@ -90,15 +91,15 @@ class LogETL(pl.Callback):
     def on_fit_start(self, trainer, pl_module):
         self.start_time = time.time()
 
-    def on_train_batch_end(self, trainer, pl_module, outputs, batch, batch_idx):
+    def on_train_epoch_end(self, trainer, pl_module):
         elapsed_time = time.time() - self.start_time
-        elapsed_steps = trainer.global_step - pl_module.start_global_step
+        elapsed_steps = trainer.current_epoch - pl_module.start_epoch
         if elapsed_steps < 1:
-            pl_module.start_global_step = 1
+            pl_module.start_epoch = 1
             elapsed_steps = 1
         remaining_time = (elapsed_time / elapsed_steps) * (
-            trainer.max_steps - trainer.global_step
+            trainer.max_epochs - trainer.current_epoch
         )
         pl_module.log(
-            "ETL (min)", remaining_time / 60, on_step=True, logger=True, sync_dist=True
+            "ETL (min)", remaining_time / 60, on_epoch=True, logger=True, sync_dist=True
         )
