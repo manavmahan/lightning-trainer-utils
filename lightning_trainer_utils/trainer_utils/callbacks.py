@@ -91,11 +91,13 @@ class LogETL(pl.Callback):
 
     def on_train_batch_end(self, trainer, pl_module, outputs, batch, batch_idx):
         elapsed_time = time.time() - self.start_time
-        elapsed_epoch = trainer.current_epoch - pl_module.start_epoch
-        if elapsed_epoch < 1:
-            trainer.start_epoch = trainer.current_epoch
-            elapsed_epoch = 1
-        remaining_time = (
-            elapsed_time * (trainer.max_epochs - trainer.current_epoch) / elapsed_epoch
+        elapsed_steps = trainer.global_step - pl_module.start_global_step
+        if elapsed_steps < 1:
+            pl_module.start_global_step = 1
+            elapsed_steps = 1
+        remaining_time = (elapsed_time / elapsed_steps) * (
+            trainer.max_steps - trainer.global_step
         )
-        pl_module.log("ETL (min)", remaining_time / 60, on_step=True, logger=True, sync_dist=True)
+        pl_module.log(
+            "ETL (min)", remaining_time / 60, on_step=True, logger=True, sync_dist=True
+        )
