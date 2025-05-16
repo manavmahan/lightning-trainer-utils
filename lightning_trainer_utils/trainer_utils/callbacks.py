@@ -51,7 +51,7 @@ class LogLearningRate(pl.Callback):
     def __init__(self):
         super().__init__()
 
-    def on_train_batch_end(self, trainer, pl_module, outputs, batch, batch_idx, dataloader_idx):
+    def on_train_batch_end(self, trainer, pl_module, outputs, batch, batch_idx):
         # Get the learning rate from the optimizer
         for param_group in trainer.optimizers[0].param_groups:
             lr = param_group["lr"]
@@ -89,7 +89,7 @@ class LogETL(pl.Callback):
     def on_fit_start(self, trainer, pl_module):
         self.start_time = time.time()
 
-    def on_train_batch_end(self, trainer, pl_module, outputs, batch, batch_idx, dataloader_idx):
+    def on_train_batch_end(self, trainer, pl_module, outputs, batch, batch_idx):
         elapsed_time = time.time() - self.start_time
         elapsed_epoch = trainer.current_epoch - pl_module.start_epoch
         if elapsed_epoch < 1:
