@@ -6,7 +6,7 @@ import torch
 torch.backends.cudnn.benchmark = True
 from pytorch_lightning.loggers import WandbLogger
 
-from data_utils.data_module import SharedDataModule
+from data_utils.data_module import SharedDataModule, DictDataLoader
 from trainer_utils.model_wrapper import ModelWrapper
 from trainer_utils.callbacks import (
     SaveCheckpoint,
@@ -60,7 +60,7 @@ if __name__ == "__main__":
     val_data_kwargs.update(data_kwargs.get("validataion", dict()))
 
     datamodule = SharedDataModule(
-        dataloader_class=torch.utils.data.DataLoader,
+        dataloader_class=DictDataLoader,
         dataset_class=DummyDataset,
         training_kwargs=train_data_kwargs,
         validation_kwargs=val_data_kwargs,

@@ -8,7 +8,7 @@ def dict_collate_fn(batch, pad_value):
     """
     Custom collate function to handle dictionaries in a batch.
     """
-    assert isinstance(batch, dict), "Batch must be a dictionary."
+    assert isinstance(batch[0], dict), "Batch must be a dictionary."
     keys = batch[0].keys()
     batch = [d.values() for d in batch]
 
