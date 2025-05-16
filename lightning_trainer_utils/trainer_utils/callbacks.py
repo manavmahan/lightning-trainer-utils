@@ -48,12 +48,15 @@ class SaveCheckpoint(pl.callbacks.ModelCheckpoint):
 
 
 class LogLearningRate(pl.Callback):
+    def __init__(self):
+        super().__init__()
+
     def on_train_step_end(self, trainer, pl_module):
         # Get the learning rate from the optimizer
         for param_group in trainer.optimizers[0].param_groups:
             lr = param_group["lr"]
             break
-        pl_module.log("train/lr", lr, on_step=True, logger=True, sync_dist=True)
+        pl_module.log("training/lr", lr, on_step=True, logger=True, sync_dist=True)
 
 
 class LogGradient(pl.Callback):
@@ -95,4 +98,4 @@ class LogETL(pl.Callback):
         remaining_time = (
             elapsed_time * (trainer.max_epochs - trainer.current_epoch) / elapsed_epoch
         )
-        pl_module.log("ETL (min)", remaining_time / 60, sync_dist=True)
+        pl_module.log("ETL (min)", remaining_time / 60, on_step=True, logger=True, sync_dist=True)
