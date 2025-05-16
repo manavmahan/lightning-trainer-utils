@@ -103,7 +103,7 @@ class ModelWrapper(pl.LightningModule):
 
     def on_load_checkpoint(self, checkpoint):
         super().on_load_checkpoint(checkpoint)
-        self.trainer.callback_metrics = checkpoint.get("metrics", {})
+        self.trainer.callback_metrics.update(checkpoint.get("metrics", {}))
 
         self.start_epoch = checkpoint.get("epoch", 0)
         if self.use_ema:

@@ -16,3 +16,5 @@ wrapper:
 trainer:
   max_steps: 32
   check_val_every_n_epoch: 2
+
+ckpt_path: checkpoints/last.ckpt

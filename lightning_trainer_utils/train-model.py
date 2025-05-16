@@ -36,7 +36,7 @@ class DummyDataset(torch.utils.data.Dataset):
 class DummyModel(torch.nn.Module):
     def __init__(self, **kwargs):
         super().__init__()
-        self.linear = torch.nn.Linear(2, 2)
+        self.linear = torch.nn.Linear(2, 200000)
 
     def forward(self, vertices, **kwargs):
         x = self.linear(vertices)
@@ -70,9 +70,9 @@ if __name__ == "__main__":
     model = DummyModel(**model_kwargs)
     wrapped_model = ModelWrapper(model=model, **trainer_kwargs.get("wrapper", dict()))
 
-    ckpt_path = trainer_kwargs.get("load_from", None)
+    ckpt_path = trainer_kwargs.get("ckpt_path", None)
     if ckpt_path is not None and os.path.exists(ckpt_path):
-        wrapped_model.on_load_checkpoint(torch.load(ckpt_path, weights_only=True))
+        torch.load(ckpt_path, weights_only=True)
     else:
         print(f"Checkpoint not found at {ckpt_path}. Starting from scratch.")
         ckpt_path = None

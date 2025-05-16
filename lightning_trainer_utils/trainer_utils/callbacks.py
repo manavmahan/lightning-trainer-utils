@@ -51,12 +51,12 @@ class LogLearningRate(pl.Callback):
     def __init__(self):
         super().__init__()
 
-    def on_train_step_end(self, trainer, pl_module):
+    def on_train_batch_end(self, trainer, pl_module, outputs, batch, batch_idx, dataloader_idx):
         # Get the learning rate from the optimizer
         for param_group in trainer.optimizers[0].param_groups:
             lr = param_group["lr"]
             break
-        pl_module.log("training/lr", lr, on_step=True, logger=True, sync_dist=True)
+        self.log("training/lr", lr, on_step=True, logger=True, sync_dist=True)
 
 
 class LogGradient(pl.Callback):
@@ -75,7 +75,7 @@ class LogGradient(pl.Callback):
         # Convert total_norm to a tensor and check for NaN or Inf
         total_norm_tensor = torch.tensor(total_norm)
 
-        pl_module.log("training/norm", total_norm, on_step=True, logger=True, sync_dist=True)
+        self.log("training/norm", total_norm, on_step=True, logger=True, sync_dist=True)
         if torch.isinf(total_norm_tensor) or torch.isnan(total_norm_tensor):
             print(f"Infinite/NaN gradient norm @ {trainer.current_epoch} epoch.")
             trainer.save_checkpoint(
@@ -89,7 +89,7 @@ class LogETL(pl.Callback):
     def on_fit_start(self, trainer, pl_module):
         self.start_time = time.time()
 
-    def on_train_step_end(self, trainer, pl_module):
+    def on_train_batch_end(self, trainer, pl_module, outputs, batch, batch_idx, dataloader_idx):
         elapsed_time = time.time() - self.start_time
         elapsed_epoch = trainer.current_epoch - pl_module.start_epoch
         if elapsed_epoch < 1:
