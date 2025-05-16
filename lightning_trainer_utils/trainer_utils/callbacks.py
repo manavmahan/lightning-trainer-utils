@@ -67,18 +67,9 @@ class LogGradient(pl.Callback):
         self.should_stop = should_stop
 
     def on_after_backward(self, trainer, pl_module):
-        # Calculate the total gradient norm
-        total_norm = 0.0
-        for param in pl_module.parameters():
-            if param.grad is not None:
-                total_norm += param.grad.data.norm(2).item() ** 2
-        total_norm = total_norm**0.5
-
-        # Convert total_norm to a tensor and check for NaN or Inf
-        total_norm_tensor = torch.tensor(total_norm)
-
-        self.log("training/norm", total_norm, on_step=True, logger=True, sync_dist=True)
-        if torch.isinf(total_norm_tensor) or torch.isnan(total_norm_tensor):
+        total_norm = pl_module.total_norm
+        self.log("training/norm", total_norm.item(), on_step=True, logger=True, sync_dist=True)
+        if torch.isinf(total_norm) or torch.isnan(total_norm):
             print(f"Infinite/NaN gradient norm @ {trainer.current_epoch} epoch.")
             trainer.save_checkpoint(
                 f"inf_nan_gradient_epoch_{trainer.current_epoch}.ckpt",
