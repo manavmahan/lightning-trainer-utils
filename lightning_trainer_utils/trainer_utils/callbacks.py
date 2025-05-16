@@ -8,7 +8,7 @@ class SaveCheckpoint(pl.callbacks.ModelCheckpoint):
         """
         Initializes the callback with the given configuration.
         Args:
-            cfg (dict): A configuration dictionary containing the following keys:
+            kwargs (dict): A configuration dictionary containing the following keys:
                 - dirpath (str, optional): Directory path where checkpoints will be saved.
                   Defaults to "checkpoints/".
                 - filename (str, optional): Filename format for the checkpoints.
@@ -34,6 +34,7 @@ class SaveCheckpoint(pl.callbacks.ModelCheckpoint):
             every_n_train_steps=every_n_train_steps,
             save_weights_only=save_weights_only,
             save_last=True,
+            monitor="step",
             **kwargs,
         )
         print(
