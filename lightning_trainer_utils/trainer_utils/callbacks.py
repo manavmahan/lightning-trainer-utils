@@ -57,7 +57,7 @@ class LogLearningRate(pl.Callback):
 
 
 class LogGradient(pl.Callback):
-    def __init__(self, should_stop: bool = True):
+    def __init__(self, should_stop: bool = False):
         super().__init__()
         self.should_stop = should_stop
 
