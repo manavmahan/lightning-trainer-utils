@@ -2,7 +2,7 @@
 from setuptools import setup, find_packages
 from datetime import datetime
 
-version = datetime.now().strftime("%YYYY.%mm.%dd.%HH.%MM")
+version = datetime.now().strftime("%Y.%m.%d.%H.%M").zfill(2)
 
 setup(
     name="lightning_trainer_utils",
