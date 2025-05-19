@@ -16,26 +16,25 @@ class SaveCheckpoint(pl.callbacks.ModelCheckpoint):
                 - save_top_k (int, optional): Number of best models to save.
                   Defaults to -1 (save all checkpoints).
                 - every_n_train_steps (int, optional): Frequency (in training steps)
-                  at which checkpoints are saved. Defaults to 500.
+                  at which checkpoints are saved. Defaults to 512.
                 - save_weights_only (bool, optional): Whether to save only model weights
                   instead of the full model. Defaults to False.
                 - **kwargs: Additional keyword arguments passed to the parent class initializer.
         """
 
         dirpath = kwargs.pop("dirpath", "checkpoints/")
-        filename = kwargs.pop("filename", "{epoch:05d}")
+        filename = kwargs.pop("filename", "{step:05d}")
         save_top_k = kwargs.pop("save_top_k", -1)
-        every_n_epochs = kwargs.pop("every_n_train_steps", 1)
+        every_n_train_steps = kwargs.pop("every_n_train_steps", 512)
         save_weights_only = kwargs.pop("save_weights_only", False)
         super().__init__(
             dirpath=dirpath,
             filename=filename,
             save_top_k=save_top_k,
-            save_on_train_epoch_end=True,
-            every_n_epochs=every_n_epochs,
+            every_n_train_steps=every_n_train_steps,
             save_weights_only=save_weights_only,
             save_last=True,
-            monitor="epoch",
+            monitor="step",
             mode="max",
             **kwargs,
         )
@@ -58,7 +57,7 @@ class LogLearningRate(pl.Callback):
         for param_group in trainer.optimizers[0].param_groups:
             lr = param_group["lr"]
             break
-        self.log("training/lr", lr, on_epoch=True, logger=True, sync_dist=True)
+        pl_module.log("training/lr", lr, on_epoch=True, logger=True, sync_dist=True)
 
 
 class LogGradient(pl.Callback):
@@ -68,8 +67,9 @@ class LogGradient(pl.Callback):
 
     def on_after_backward(self, trainer, pl_module):
         total_norm = pl_module.total_norm
-        self.log("training/norm", total_norm.item(), on_step=True, logger=True, sync_dist=True)
-        if torch.isinf(total_norm) or torch.isnan(total_norm):
+        pl_module.log("training/norm", total_norm, on_step=True, logger=True, sync_dist=True)
+        total_norm_tensor = torch.tensor(total_norm)
+        if torch.isinf(total_norm_tensor) or torch.isnan(total_norm_tensor):
             print(f"Infinite/NaN gradient norm @ {trainer.current_epoch} epoch.")
             trainer.save_checkpoint(
                 f"inf_nan_gradient_epoch_{trainer.current_epoch}.ckpt",

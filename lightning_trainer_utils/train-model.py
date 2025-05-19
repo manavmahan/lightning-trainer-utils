@@ -80,7 +80,7 @@ if __name__ == "__main__":
     wandb_logger = WandbLogger(
         **trainer_kwargs.get("wandb", dict()), id=wrapped_model.wandb_id
     )
-    callbacks = [SaveCheckpoint(every_n_train_steps=3), LogETL(), LogGradient(), LogLearningRate()]
+    callbacks = [SaveCheckpoint(), LogETL(), LogGradient(), LogLearningRate()]
 
     trainer = pl.Trainer(
         **trainer_kwargs.get("trainer", dict()),

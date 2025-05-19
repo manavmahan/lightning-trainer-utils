@@ -4,6 +4,7 @@ from accelerate import Accelerator
 from functools import partial
 
 from torch import nn
+import torch
 from torch.optim import Optimizer
 from torch.optim.lr_scheduler import LambdaLR, _LRScheduler
 
@@ -109,7 +110,7 @@ class OptimizerWithScheduler(nn.Module):
         self.optimizer, self.scheduler = accelerator.prepare(
             self.optimizer, self.scheduler
         )
-        self.accelerator = accelerator
+        # self.accelerator = accelerator
         self.total_norm = None
 
     def state_dict(self):
@@ -134,7 +135,7 @@ class OptimizerWithScheduler(nn.Module):
                 for p in param_group["params"]
             ]
 
-            total_norm = self.accelerator.clip_grad_norm_(
+            total_norm = torch.nn.utils.clip_grad_norm_(
                 all_params, self.max_grad_norm
             )
             # print(self.max_grad_norm)

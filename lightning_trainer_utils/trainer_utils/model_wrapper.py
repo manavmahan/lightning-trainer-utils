@@ -41,7 +41,7 @@ class ModelWrapper(pl.LightningModule):
         self.optimizer_kwargs = optimizer_kwargs
         self.scheduler_kwargs = scheduler_kwargs
 
-        self.max_norm = optimizer_kwargs.get("max_norm", 1.0)
+        self.max_grad_norm = optimizer_kwargs.get("max_grad_norm", 1.0)
         self.total_norm = 0
 
         self.wandb_id = None
@@ -67,10 +67,17 @@ class ModelWrapper(pl.LightningModule):
         return [optimizer], [scheduler]
 
     def optimizer_step(self, *args, **kwargs):
-        if self.max_norm is not None:
-            self.total_norm = utils.clip_grad_norm_(self.parameters(), self.max_norm)
+        optimizer = self.optimizers()
+        all_params = [
+            p
+            for param_group in optimizer.param_groups
+            for p in param_group["params"]
+            if p.requires_grad
+        ]
+        if self.max_grad_norm is not None:
+            self.total_norm = utils.clip_grad_norm_(all_params, self.max_grad_norm)
         else:
-            self.total_norm = utils.clip_grad_norm_(self.parameters(), float("inf"))
+            self.total_norm = utils.clip_grad_norm_(all_params, float("inf"))
         super().optimizer_step(*args, **kwargs)
 
     def forward(self, x):
