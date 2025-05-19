@@ -121,8 +121,10 @@ class ModelWrapper(pl.LightningModule):
 
     def on_load_checkpoint(self, checkpoint):
         super().on_load_checkpoint(checkpoint)
-        self.trainer.callback_metrics.update(checkpoint.get("metrics", {}))
-
+        try:
+            self.trainer.callback_metrics.update(checkpoint.get("metrics", {}))
+        except RuntimeError:
+            print("Metrics not transferred to trainer.")
         self.start_step = checkpoint.get("global_step", 0)
         self.start_epoch = checkpoint.get("epoch", 0)
         if self.use_ema:
