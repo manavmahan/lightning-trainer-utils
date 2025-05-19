@@ -42,7 +42,7 @@ class ModelWrapper(pl.LightningModule):
         self.scheduler_kwargs = scheduler_kwargs
 
         self.max_grad_norm = optimizer_kwargs.get("max_grad_norm", 1.0)
-        self.total_norm = 0
+        self.total_norm = torch.Tensor([0]).to(self.device)
 
         self.wandb_id = None
         self.start_step = 0
@@ -65,7 +65,14 @@ class ModelWrapper(pl.LightningModule):
             if self.schedueler is not None
             else get_cosine_schedule_with_warmup(optimizer, **self.scheduler_kwargs)
         )
-        return [optimizer], [scheduler]
+        return {
+            'optimizer': optimizer,
+            'lr_scheduler': {
+                'scheduler': scheduler,
+                'interval': 'step',  # Step after each batch
+                'frequency': 1
+            }
+        }
 
     def optimizer_step(self, *args, **kwargs):
         optimizer = self.optimizers()
