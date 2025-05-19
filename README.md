@@ -1,6 +1,11 @@
 [![PyPI version](https://badge.fury.io/py/lightning-trainer-utils.svg)](https://pypi.org/project/lightning-trainer-utils/)
 # PyTorch Lightning Trainer Utilities
 
+## Installation
+```bash
+pip install lightning-trainer-utils
+```
+
 ## ML Model Assumptions
 
 ### forward
