@@ -42,7 +42,7 @@ class ModelWrapper(pl.LightningModule):
         self.scheduler_kwargs = scheduler_kwargs
 
         self.max_grad_norm = optimizer_kwargs.get("max_grad_norm", 1.0)
-        self.total_norm = torch.Tensor([0]).to(self.device)
+        self.total_norm = None
 
         self.wandb_id = None
         self.start_step = 0

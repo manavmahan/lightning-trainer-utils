@@ -67,6 +67,8 @@ class LogGradient(pl.Callback):
 
     def on_after_backward(self, trainer, pl_module):
         total_norm = pl_module.total_norm
+        if total_norm is None:
+            return
         pl_module.log("training/norm", total_norm, on_step=True, logger=True, sync_dist=True)
         if torch.isinf(total_norm) or torch.isnan(total_norm):
             print(f"Infinite/NaN gradient norm @ {trainer.current_epoch} epoch.")
