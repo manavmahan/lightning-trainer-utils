@@ -16,3 +16,11 @@ It expects `batch` as `dict` and returns a `dict` with keys `[loss, report, outp
     - `loss`
     - `report`
     - `output` [optional]
+
+
+## Trainer
+### Global Step
+`batch_step = num_samples / (batch_size * num_devices)
+trainer_global_step = num_samples / (batch_size * num_devices * grad_accumulation)`
+`SaveCheckpoint` also use `trainer_global_step`.
+
