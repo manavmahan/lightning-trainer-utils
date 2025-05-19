@@ -57,7 +57,7 @@ class LogLearningRate(pl.Callback):
         for param_group in trainer.optimizers[0].param_groups:
             lr = param_group["lr"]
             break
-        pl_module.log("training/lr", lr, on_step=True, logger=True, sync_dist=True)
+        pl_module.log("trainer/lr", lr, on_step=True, logger=True, sync_dist=True)
 
 
 class LogGradient(pl.Callback):
@@ -69,11 +69,11 @@ class LogGradient(pl.Callback):
         total_norm = pl_module.total_norm
         if total_norm is None:
             return
-        pl_module.log("training/norm", total_norm, on_step=True, logger=True, sync_dist=True)
+        pl_module.log("trainer/norm", total_norm, on_step=True, logger=True, sync_dist=True)
         if torch.isinf(total_norm) or torch.isnan(total_norm):
             print(f"Infinite/NaN gradient norm @ {trainer.current_epoch} epoch.")
             trainer.save_checkpoint(
-                f"inf_nan_gradient_epoch_{trainer.current_epoch}.ckpt",
+                f"checkpoints/inf_nan_gradient_epoch_{trainer.current_epoch}.ckpt",
                 weights_only=True,
             )
             trainer.should_stop = self.should_stop
@@ -95,7 +95,7 @@ class LogETL(pl.Callback):
             trainer.max_epochs - trainer.current_epoch
         )
         pl_module.log(
-            "ETL (min)", remaining_time / 60, on_epoch=True, logger=True, sync_dist=True
+            "trainer/ETL (min)", remaining_time / 60, on_epoch=True, logger=True, sync_dist=True
         )
 
     def on_train_batch_end(self, trainer: pl.Trainer, pl_module: pl.LightningModule, outputs, batch, batch_idx):
@@ -110,5 +110,5 @@ class LogETL(pl.Callback):
             trainer.max_steps - trainer.global_step
         )
         pl_module.log(
-            "ETL (min)", remaining_time / 60, on_step=True, logger=True, sync_dist=True
+            "trainer/ETL (min)", remaining_time / 60, on_step=True, logger=True, sync_dist=True
         )
