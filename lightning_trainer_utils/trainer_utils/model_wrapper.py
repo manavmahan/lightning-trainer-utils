@@ -45,6 +45,7 @@ class ModelWrapper(pl.LightningModule):
         self.total_norm = 0
 
         self.wandb_id = None
+        self.start_step = 0
         self.start_epoch = 0
 
         self.use_ema = use_ema
@@ -115,6 +116,7 @@ class ModelWrapper(pl.LightningModule):
         super().on_load_checkpoint(checkpoint)
         self.trainer.callback_metrics.update(checkpoint.get("metrics", {}))
 
+        self.start_step = checkpoint.get("global_step", 0)
         self.start_epoch = checkpoint.get("epoch", 0)
         if self.use_ema:
             if "ema_state_dict" in checkpoint:

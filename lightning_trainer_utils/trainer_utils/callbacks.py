@@ -43,7 +43,7 @@ class SaveCheckpoint(pl.callbacks.ModelCheckpoint):
             f"\n- dirpath: {dirpath}"
             f"\n- filename: {filename}"
             f"\n- save_top_k: {save_top_k}"
-            f"\n- every_n_epochs: {every_n_epochs}"
+            f"\n- every_n_train_steps: {every_n_train_steps}"
             f"\n- save_weights_only: {save_weights_only}"
         )
 
@@ -52,12 +52,12 @@ class LogLearningRate(pl.Callback):
     def __init__(self):
         super().__init__()
 
-    def on_train_epoch_end(self, trainer, pl_module):
+    def on_train_batch_end(self, trainer: pl.Trainer, pl_module: pl.LightningModule, outputs, batch, batch_idx):
         # Get the learning rate from the optimizer
         for param_group in trainer.optimizers[0].param_groups:
             lr = param_group["lr"]
             break
-        pl_module.log("training/lr", lr, on_epoch=True, logger=True, sync_dist=True)
+        pl_module.log("training/lr", lr, on_step=True, logger=True, sync_dist=True)
 
 
 class LogGradient(pl.Callback):
@@ -68,8 +68,7 @@ class LogGradient(pl.Callback):
     def on_after_backward(self, trainer, pl_module):
         total_norm = pl_module.total_norm
         pl_module.log("training/norm", total_norm, on_step=True, logger=True, sync_dist=True)
-        total_norm_tensor = torch.tensor(total_norm)
-        if torch.isinf(total_norm_tensor) or torch.isnan(total_norm_tensor):
+        if torch.isinf(total_norm) or torch.isnan(total_norm):
             print(f"Infinite/NaN gradient norm @ {trainer.current_epoch} epoch.")
             trainer.save_checkpoint(
                 f"inf_nan_gradient_epoch_{trainer.current_epoch}.ckpt",
@@ -82,15 +81,32 @@ class LogETL(pl.Callback):
     def on_fit_start(self, trainer, pl_module):
         self.start_time = time.time()
 
-    def on_train_epoch_end(self, trainer, pl_module):
+    def on_train_epoch_end(self, trainer: pl.Trainer, pl_module: pl.LightningModule):
+        if trainer.max_epochs==-1:
+            return
         elapsed_time = time.time() - self.start_time
-        elapsed_steps = trainer.current_epoch - pl_module.start_epoch
-        if elapsed_steps < 1:
-            pl_module.start_epoch = 1
-            elapsed_steps = 1
-        remaining_time = (elapsed_time / elapsed_steps) * (
+        elapsed_epochs = trainer.current_epoch - pl_module.start_epoch
+        if elapsed_epochs < 1:
+            pl_module.start_epoch = trainer.current_epoch + 1
+            elapsed_epochs = 1
+        remaining_time = (elapsed_time / elapsed_epochs) * (
             trainer.max_epochs - trainer.current_epoch
         )
         pl_module.log(
             "ETL (min)", remaining_time / 60, on_epoch=True, logger=True, sync_dist=True
+        )
+
+    def on_train_batch_end(self, trainer: pl.Trainer, pl_module: pl.LightningModule, outputs, batch, batch_idx):
+        if trainer.max_steps==-1:
+            return
+        elapsed_time = time.time() - self.start_time
+        elapsed_steps = trainer.global_step - pl_module.start_step
+        if elapsed_steps < 1:
+            pl_module.start_step = trainer.global_step + 1
+            elapsed_steps = 1
+        remaining_time = (elapsed_time / elapsed_steps) * (
+            trainer.max_steps - trainer.global_step
+        )
+        pl_module.log(
+            "ETL (min)", remaining_time / 60, on_step=True, logger=True, sync_dist=True
         )

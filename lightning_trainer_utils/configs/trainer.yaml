@@ -16,7 +16,7 @@ wrapper:
     filter_by_requires_grad: true
 
 trainer:
-  max_epochs: 128
+  max_steps: 128
   check_val_every_n_epoch: 2
 
 ckpt_path: checkpoints/epoch=00062.ckpt
