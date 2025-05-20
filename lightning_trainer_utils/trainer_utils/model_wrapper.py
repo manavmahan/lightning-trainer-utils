@@ -1,3 +1,4 @@
+from pathlib import Path
 import time
 import torch
 import torch.nn.utils as utils
@@ -133,3 +134,16 @@ class ModelWrapper(pl.LightningModule):
                 print("EMA state dict found in checkpoint.")
             else:
                 print("No EMA state dict found in checkpoint.")
+
+
+def extract_weights(model, checkpoint_path: str|Path, save_to: str|Path, wrapper_kwargs: dict = dict(), half: bool = False):
+    model_wrapper = ModelWrapper.load_from_checkpoint(model=model, **wrapper_kwargs, checkpoint_path=checkpoint_path)
+    if model_wrapper.use_ema:
+        weights = model_wrapper.ema_model.shadow_params
+        model = model_wrapper.model
+        model.load_ema(weights)
+    else:
+        model = model_wrapper.model
+    if half:
+        model = model.half()
+    torch.save(model.state_dict(), save_to)
