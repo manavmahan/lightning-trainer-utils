@@ -102,7 +102,7 @@ class LogETL(pl.Callback):
         if trainer.max_steps==-1:
             return
         elapsed_time = time.time() - self.start_time
-        elapsed_steps = trainer.global_step - pl_module.start_step
+        elapsed_steps = trainer.global_step - pl_module.start_step + 1
         if elapsed_steps < 1:
             pl_module.start_step = trainer.global_step + 1
             elapsed_steps = 1
