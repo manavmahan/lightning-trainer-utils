@@ -19,6 +19,16 @@ ModelOuput = namedtuple(
     "ModelOuput", ["loss", "report", "output"], defaults=[None, None, None]
 )
 
+from contextlib import contextmanager
+
+@contextmanager
+def use_ema_weights(ema, model):
+    ema.apply_to(model)
+    try:
+        yield
+    finally:
+        ema.restore(model)
+
 
 class ModelWrapper(pl.LightningModule):
     @beartype
@@ -51,7 +61,7 @@ class ModelWrapper(pl.LightningModule):
 
         self.use_ema = use_ema
         if self.use_ema:
-            self.ema_model = EMA(self.model)
+            self.ema = EMA(self.model.named_parameters())
 
         print("Unuserd kwargs:", kwargs)
 
@@ -101,23 +111,30 @@ class ModelWrapper(pl.LightningModule):
         for k, v in report.items():
             self.log("training/" + k, v, logger=True, sync_dist=True)
 
-        if self.use_ema and self.global_rank == 0:
-            self.ema_model.step(self.model)
+        if self.use_ema and self.trainer.is_global_zero:
+            self.ema.update(self.model.named_parameters())
         return loss
 
     def validation_step(self, batch, batch_idx):
+        if self.use_ema:
+            with use_ema_weights(self.ema, self.model):
+                fwd_out = self(batch)
+        else:
+            fwd_out = self(batch)
+
         fwd_out = self(batch)
         loss = fwd_out.loss
         report = fwd_out.report
         for k, v in report.items():
             self.log("validation/" + k, v, logger=True, sync_dist=True)
+
         return loss
 
     def on_save_checkpoint(self, checkpoint):
         """Manually save additional metrics."""
         checkpoint["metrics"] = self.trainer.callback_metrics
         if self.use_ema:
-            checkpoint["ema_state_dict"] = self.ema_model.state_dict()
+            checkpoint["ema_state_dict"] = self.ema.state_dict()
         checkpoint["wandb_id"] = self.trainer.logger.experiment.id
 
     def on_load_checkpoint(self, checkpoint):
@@ -130,7 +147,7 @@ class ModelWrapper(pl.LightningModule):
         self.start_epoch = checkpoint.get("epoch", 0)
         if self.use_ema:
             if "ema_state_dict" in checkpoint:
-                self.ema_model.load_state_dict(checkpoint["ema_state_dict"])
+                self.ema.load_state_dict(checkpoint["ema_state_dict"])
                 print("EMA state dict found in checkpoint.")
             else:
                 print("No EMA state dict found in checkpoint.")
