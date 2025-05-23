@@ -19,16 +19,6 @@ ModelOuput = namedtuple(
     "ModelOuput", ["loss", "report", "output"], defaults=[None, None, None]
 )
 
-from contextlib import contextmanager
-
-@contextmanager
-def use_ema_weights(ema, model):
-    ema.apply_to(model)
-    try:
-        yield
-    finally:
-        ema.restore(model)
-
 
 class ModelWrapper(pl.LightningModule):
     @beartype
@@ -61,7 +51,7 @@ class ModelWrapper(pl.LightningModule):
 
         self.use_ema = use_ema
         if self.use_ema:
-            self.ema = EMA(self.model.named_parameters())
+            self.ema = EMA(self.model)
 
         print("Unuserd kwargs:", kwargs)
 
@@ -112,13 +102,13 @@ class ModelWrapper(pl.LightningModule):
             self.log("training/" + k, v, logger=True, sync_dist=True)
 
         if self.use_ema and self.trainer.is_global_zero:
-            self.ema.update(self.model.named_parameters())
+            self.ema.update()
         return loss
 
     def validation_step(self, batch, batch_idx):
         if self.use_ema:
-            with use_ema_weights(self.ema, self.model):
-                fwd_out = self(batch)
+            output = self.ema(**batch, **self.forward_kwargs)
+            fwd_out = ModelOuput(**output)
         else:
             fwd_out = self(batch)
 
@@ -156,9 +146,7 @@ class ModelWrapper(pl.LightningModule):
 def extract_weights(model, checkpoint_path: str|Path, save_to: str|Path, wrapper_kwargs: dict = dict(), half: bool = False):
     model_wrapper = ModelWrapper.load_from_checkpoint(model=model, **wrapper_kwargs, checkpoint_path=checkpoint_path)
     if model_wrapper.use_ema:
-        weights = model_wrapper.ema_model.shadow_params
-        model = model_wrapper.model
-        model.load_ema(weights)
+        model = model_wrapper.ema
     else:
         model = model_wrapper.model
     if half:

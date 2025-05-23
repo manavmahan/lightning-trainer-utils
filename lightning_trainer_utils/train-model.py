@@ -7,7 +7,7 @@ torch.backends.cudnn.benchmark = True
 from pytorch_lightning.loggers import WandbLogger
 
 from data_utils.data_module import SharedDataModule, DictDataLoader
-from trainer_utils.model_wrapper import ModelWrapper
+from trainer_utils.model_wrapper import ModelWrapper, extract_weights
 from trainer_utils.callbacks import (
     SaveCheckpoint,
     LogLearningRate,
@@ -89,4 +89,17 @@ if __name__ == "__main__":
         log_every_n_steps=1,
     )
 
-    trainer.fit(wrapped_model, datamodule=datamodule, ckpt_path=ckpt_path)
+    # trainer.fit(wrapped_model, datamodule=datamodule, ckpt_path=ckpt_path)
+
+    extract_weights(
+        model=model,
+        checkpoint_path="checkpoints/last-v1.ckpt",
+        save_to="checkpoints/weights.safetensors",
+        wrapper_kwargs=trainer_kwargs.get("wrapper", dict()),
+    )
+
+    wrapped_model.on_load_checkpoint(
+        torch.load("checkpoints/last-v1.ckpt", map_location="cpu")
+    )
+
+    weights = torch.load("checkpoints/weights.safetensors", map_location="cpu")
