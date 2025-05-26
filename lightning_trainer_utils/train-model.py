@@ -11,7 +11,7 @@ from trainer_utils.model_wrapper import ModelWrapper, extract_weights
 from trainer_utils.callbacks import (
     SaveCheckpoint,
     LogLearningRate,
-    LogGradient,
+    GradientClipLogger,
     LogETL,
 )
 
@@ -80,7 +80,7 @@ if __name__ == "__main__":
     wandb_logger = WandbLogger(
         **trainer_kwargs.get("wandb", dict()), id=wrapped_model.wandb_id
     )
-    callbacks = [SaveCheckpoint(), LogETL(), LogGradient(), LogLearningRate()]
+    callbacks = [SaveCheckpoint(), LogETL(), GradientClipLogger(), LogLearningRate()]
 
     trainer = pl.Trainer(
         **trainer_kwargs.get("trainer", dict()),
