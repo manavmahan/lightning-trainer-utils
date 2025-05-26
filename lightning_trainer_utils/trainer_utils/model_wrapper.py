@@ -146,7 +146,7 @@ class ModelWrapper(pl.LightningModule):
 def extract_weights(model, checkpoint_path: str|Path, save_to: str|Path, wrapper_kwargs: dict = dict(), half: bool = False):
     model_wrapper = ModelWrapper.load_from_checkpoint(model=model, **wrapper_kwargs, checkpoint_path=checkpoint_path)
     if model_wrapper.use_ema:
-        model = model_wrapper.ema
+        model = model_wrapper.ema.ema_model
     else:
         model = model_wrapper.model
     if half:
