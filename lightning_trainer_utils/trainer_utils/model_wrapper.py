@@ -42,7 +42,7 @@ class ModelWrapper(pl.LightningModule):
         self.optimizer_kwargs = optimizer_kwargs
         self.scheduler_kwargs = scheduler_kwargs
 
-        self.max_grad_norm = optimizer_kwargs.get("max_grad_norm", 1.0)
+        self.max_grad_norm = optimizer_kwargs.get("max_grad_norm", float("inf"))
         self.total_norm = None
 
         self.wandb_id = None
@@ -113,7 +113,6 @@ class ModelWrapper(pl.LightningModule):
         else:
             fwd_out = self(batch)
 
-        fwd_out = self(batch)
         loss = fwd_out.loss
         report = fwd_out.report
         for k, v in report.items():

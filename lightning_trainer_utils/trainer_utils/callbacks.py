@@ -60,16 +60,17 @@ class LogLearningRate(pl.Callback):
         pl_module.log("trainer/lr", lr, on_step=True, logger=True, sync_dist=True)
 
 
-class LogGradient(pl.Callback):
+class GradientClipLogger(pl.Callback):
     def __init__(self, should_stop: bool = False):
         super().__init__()
         self.should_stop = should_stop
 
-    def on_after_backward(self, trainer, pl_module):
-        total_norm = pl_module.total_norm
-        if total_norm is None:
-            return
-        pl_module.log("trainer/norm", total_norm, on_step=True, logger=True, sync_dist=True)
+    def on_before_optimizer_step(self, trainer, pl_module, optimizer):
+        total_norm = torch.nn.utils.clip_grad_norm_(
+            pl_module.parameters(), max_norm=pl_module.max_grad_norm
+        )
+        pl_module.log("trainer/norm", total_norm)
+
         if torch.isinf(total_norm) or torch.isnan(total_norm):
             print(f"Infinite/NaN gradient norm @ {trainer.current_epoch} epoch.")
             trainer.save_checkpoint(
@@ -112,3 +113,13 @@ class LogETL(pl.Callback):
         pl_module.log(
             "trainer/ETL (min)", remaining_time / 60, on_step=True, logger=True, sync_dist=True
         )
+
+    
+class EMAUpdateCallback(pl.Callback):
+    def __init__(self):
+        super().__init__()
+
+    def on_after_optimizer_step(self, trainer, pl_module, optimizer):
+        if pl_module.use_ema and trainer.is_global_zero:
+            print("Updating EMA parameters...", {trainer.global_step})
+            pl_module.ema.update()
