@@ -17,7 +17,7 @@ wrapper:
   use_ema: true
 
 trainer:
-  max_steps: 1024
+  max_steps: 128
   check_val_every_n_epoch: 2
   accumulate_grad_batches: 4
 

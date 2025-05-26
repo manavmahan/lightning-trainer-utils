@@ -88,6 +88,8 @@ class ModelWrapper(pl.LightningModule):
         else:
             self.total_norm = utils.clip_grad_norm_(all_params, float("inf"))
         super().optimizer_step(*args, **kwargs)
+        if self.use_ema and self.trainer.is_global_zero:
+            self.ema.update()
 
     def forward(self, x):
         output = self.model(**x, **self.forward_kwargs)
@@ -101,12 +103,11 @@ class ModelWrapper(pl.LightningModule):
         for k, v in report.items():
             self.log("training/" + k, v, logger=True, sync_dist=True)
 
-        if self.use_ema and self.trainer.is_global_zero:
-            self.ema.update()
         return loss
 
     def validation_step(self, batch, batch_idx):
         if self.use_ema:
+            self.ema.eval()
             output = self.ema(**batch, **self.forward_kwargs)
             fwd_out = ModelOuput(**output)
         else:

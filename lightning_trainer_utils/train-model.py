@@ -18,7 +18,7 @@ from trainer_utils.callbacks import (
 
 class DummyDataset(torch.utils.data.Dataset):
     def __init__(self, **kwargs):
-        self.length = kwargs.get("length", 100)
+        self.length = kwargs.get("length", 256)
         super().__init__()
 
     def __len__(self):
@@ -26,7 +26,7 @@ class DummyDataset(torch.utils.data.Dataset):
 
     def __getitem__(self, idx):
         vertices = torch.randn(32, 2)
-        segments = torch.randint(0, 32, (10, 2))
+        segments = (vertices[:, 0] * vertices[:, 0]) + (vertices[:, 1] * vertices[:, 1]) > 0.5
         return {
             "vertices": vertices,
             "segments": segments,
@@ -89,7 +89,7 @@ if __name__ == "__main__":
         log_every_n_steps=1,
     )
 
-    # trainer.fit(wrapped_model, datamodule=datamodule, ckpt_path=ckpt_path)
+    trainer.fit(wrapped_model, datamodule=datamodule, ckpt_path=ckpt_path)
 
     extract_weights(
         model=model,
